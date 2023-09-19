@@ -2,6 +2,7 @@
 
 #include <utility>
 
+// A simple min heap with dummy elements for min and max.
 template <class KEY, class VALUE, bool (*COMP)(const KEY &, const KEY &)>
 class MinHeap
 {
@@ -69,7 +70,7 @@ public:
   {
     minguard = min;
     maxguard = max;
-    unsigned int realcap = 2*capacity+10;
+    unsigned int realcap = 2*capacity+2;
     data = new mp[realcap];
     currsize = 0;
     data[0].k = minguard;

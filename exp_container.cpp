@@ -26,26 +26,26 @@ ExpCont::~ExpCont()
 
 void ExpCont::performExperiment(const std::string eid, const bool prog, const std::vector<std::string> args)
 {
-  for (std::vector<std::pair<Experiment*, Experiment*> >::iterator it = experiments.begin(); it < experiments.end(); it++)
-    if (it->first->id() == eid)
+  for (std::pair<Experiment*, Experiment*> e : experiments)
+    if (e.first->id() == eid)
     {
       if (prog)
-	it->first->perform(args);
+	e.first->perform(args);
       else
-	it->second->perform(args);
+	e.second->perform(args);
     }
 }
 
 void ExpCont::printAll()
 {
-  for (std::vector<std::pair<Experiment*, Experiment*> >::iterator it = experiments.begin(); it < experiments.end(); it++)
-    printOne(it->first->id());
+  for (std::pair<Experiment*, Experiment*> e : experiments)
+    printOne(e.first->id());
 }
 
 void ExpCont::printOne(const std::string eid)
 {
   std::cout << eid << ":" << std::endl;
-  for (std::vector<std::pair<Experiment*, Experiment*> >::iterator it = experiments.begin(); it < experiments.end(); it++)
-    if (it->first->id() == eid)
-      it->first->printUsage();
+  for (std::pair<Experiment*, Experiment*> e : experiments)
+    if (e.first->id() == eid)
+      e.first->printUsage();
 }

@@ -881,8 +881,8 @@ class ComplexityBruteForce : public Experiment
 
 protected:
   FRetriever* ret;
-  // maģiskās konstantes
-  // gribam, lai strādā skaitļiem līdz 100 bitiem
+  // magical constants
+  // we wish this code to work for up to 100 bits
   static const ui MAX_ECOMPL = 300;
   static const ull CS = 1024*1024*1024; // f cache size
   static const ui MAX_LB = 10000;

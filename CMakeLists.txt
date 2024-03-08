@@ -14,4 +14,4 @@ include_directories(msieve/include) # specify the directories where the compiler
 
 add_executable(exp exp.cpp experiment.cpp exp_container.cpp fretriever.cpp helpers.cpp factorize.cpp) # specify the source files for your executable
 
-target_link_libraries(exp gmpxx gmp msieve z ecm pthread png dl) # specify the libraries to link against
+target_link_libraries(exp gmpxx gmp msieve z ecm pthread png dl ncurses) # specify the libraries to link against

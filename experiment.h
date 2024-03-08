@@ -14,6 +14,7 @@
 #include <gmp.h>
 #include <gmpxx.h>
 #include <png++/png.hpp>
+#include <ncurses.h>
 
 #include "fretriever.h"
 #include "heap.h"
@@ -805,11 +806,13 @@ class ComplexityBruteForce : public Experiment {
 
 protected:
     FRetriever *ret;
+    ui depth; // for displaying the recursion tree using ncurses
     // magical constants
     // we wish this code to work for up to 100 bits
     static const ui MAX_ECOMPL = 300;
     static const ull CS = 1024 * 1024 * 1024; // f cache size
     static const ui MAX_LB = 10000;
+    const std::string BLANK_LINE = "                                                ";
     mpz_class E[MAX_ECOMPL];
     mpz_class m_fsize;
     ui LBS[MAX_LB];
@@ -851,7 +854,12 @@ protected:
             LBS[i] = trivialLowerBound(n);
             n += 1;
         }
-
+        if (PRINT) {
+            depth = 0;
+            initscr();
+            noecho();
+            curs_set(0);
+        }
     }
 
     virtual ui trivialLowerBound(mpz_class m_n) {
@@ -863,6 +871,9 @@ protected:
 
     virtual void clear() {
         delete ret;
+        if (PRINT) {
+            endwin();
+        }
     }
 
     void loadfsize() {
@@ -916,8 +927,14 @@ public:
         } else {
             faddcache[number] = std::make_pair(trivialLowerBound(number), false);
         }
-        if (PRINT)
-            std::cout << "+" << number << " " << maxCompl << std::endl;
+        if (PRINT) {
+            std::stringstream ss;
+            ss << "+" << number << " " << maxCompl;
+            move(depth, 0);
+            addstr(ss.str().c_str());
+            refresh();
+            depth++;
+        }
         const ui MAXCOMPL = 1000000;
         ui complexity = MAXCOMPL;
         mpz_class a;
@@ -932,8 +949,8 @@ public:
             ui c = complexityMul(a, min(complexity - 1, maxCompl) - bcomplexity);
             if (c > 0) {
                 complexity = c + bcomplexity;
-                if (PRINT)
-                    std::cout << a << "+" << b << std::endl;
+//                if (PRINT)
+//                    std::cout << a << "+" << b << std::endl;
             }
             a--;
             b++;
@@ -944,6 +961,11 @@ public:
             complexity = 0;
         } else {
             faddcache[number] = std::make_pair(complexity, true);
+        }
+        if (PRINT) {
+            depth--;
+            move(depth, 0);
+            addstr(BLANK_LINE.c_str());
         }
         return complexity;
     }
@@ -968,8 +990,14 @@ public:
         } else {
             fmulcache[number] = std::make_pair(trivialLowerBound(number), false);
         }
-        if (PRINT)
-            std::cout << "*" << number << " " << maxCompl << std::endl;
+        if (PRINT) {
+            std::stringstream ss;
+            ss << "*" << number << " " << maxCompl << "                                      ";
+            move(depth, 0);
+            addstr(ss.str().c_str());
+            refresh();
+            depth++;
+        }
 
         std::vector<mpz_class> fs;
         std::vector<mpz_class> pfs;
@@ -1095,11 +1123,11 @@ public:
                     }
                     if (totallb <= maxCompl) {
                         complexity = std::min(complexity, totallb);
-                        if (PRINT) {
-                            for (ui i = 0; i < fi - 1; i++)
-                                std::cout << divisors[divindex[i]] << "*";
-                            std::cout << divisors[divindex[fi - 1]] << std::endl;
-                        }
+//                        if (PRINT) {
+//                            for (ui i = 0; i < fi - 1; i++)
+//                                std::cout << divisors[divindex[i]] << "*";
+//                            std::cout << divisors[divindex[fi - 1]] << std::endl;
+//                        }
                     }
                 }
 
@@ -1175,6 +1203,11 @@ public:
             complexity = 0;
         } else {
             fmulcache[number] = std::make_pair(complexity, true);
+        }
+        if (PRINT) {
+            depth--;
+            move(depth, 0);
+            addstr(BLANK_LINE.c_str());
         }
         return complexity;
     }

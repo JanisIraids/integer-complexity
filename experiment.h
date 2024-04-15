@@ -25,13 +25,13 @@ class Experiment {
 protected:
     std::ostream &out; // output stream
 public:
-    Experiment(std::ostream &outs);
+    explicit Experiment(std::ostream &outs);
 
-    virtual ~Experiment() {};
+    virtual ~Experiment() = default;
 
     virtual void printUsage() = 0;
 
-    virtual void perform(const std::vector<std::string> args);
+    virtual void perform(std::vector<std::string> args);
 
     virtual std::string id() = 0;
 };
@@ -40,31 +40,31 @@ class ExperimentWRet : public Experiment {
 protected:
     FRetriever *ret;
 
-    virtual void _perform(const std::vector<std::string> args) = 0;
+    virtual void _perform(std::vector<std::string> args) = 0;
 
 public:
-    ExperimentWRet(std::ostream &outs);
+    explicit ExperimentWRet(std::ostream &outs);
 
-    virtual void perform(const std::vector<std::string> args);
+    void perform(std::vector<std::string> args) override;
 };
 
 template<bool PRINT>
 class GenHypo : public ExperimentWRet {
 public:
 
-    GenHypo(std::ostream &outs) : ExperimentWRet(outs) {};
+    explicit GenHypo(std::ostream &outs) : ExperimentWRet(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "Test the hypothesis, that f(2^a * 3^b * 5^c) = 2a + 3b + 5c for all a, b, c, with c < 6"
                   << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "gh";
     }
 
 protected:
-    virtual void _perform(const std::vector<std::string> args) {
+    void _perform(const std::vector<std::string> args) override {
         out << "Counterexamples to the hypothesis that f(2^a * 3^b * 5^c) = 2a + 3b + 5c" << std::endl;
         if (PRINT)
             std::cout << "Checking..." << std::endl;
@@ -76,26 +76,25 @@ protected:
                             << 2 * i + 3 * j + 5 * k << std::endl;
         if (PRINT)
             std::cout << "Done!" << std::endl;
-        return;
     }
 };
 
-template<bool PRINT>
+template <bool PRINT>
 class SecondSmallest : public ExperimentWRet {
 public:
 
-    SecondSmallest(std::ostream &outs) : ExperimentWRet(outs) {};
+    explicit SecondSmallest(std::ostream &outs) : ExperimentWRet(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "Print the second smallest integer of complexity =n or * otherwise" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "ss";
     }
 
 protected:
-    virtual void _perform(const std::vector<std::string> args) {
+    void _perform(const std::vector<std::string> args) override {
         out << "Second smallest integer of complexity n" << std::endl;
         const ui MAXCOMPL = 100;
         ull freq[MAXCOMPL];
@@ -108,8 +107,8 @@ protected:
         E[4] = 4;
         for (ui i = 5; i < MAXCOMPL; i++)
             E[i] = E[i - 3] * 3;
-        for (ui i = 0; i < MAXCOMPL; i++)
-            freq[i] = 0;
+        for (auto & f : freq)
+            f = 0;
         for (ull i = 1; i < ret->size; i++) {
             ui c = ret->bf(i);
             freq[c]++;
@@ -124,25 +123,24 @@ protected:
                 out << i << " *" << std::endl;
             i++;
         }
-        return;
     }
 };
 
 class ShortestExpr : public Experiment {
 
-    void printShortest(const long long n);
+    void printShortest(long long n);
 
 protected:
     FRetriever *ret;
 
 public:
-    ShortestExpr(std::ostream &outs);
+    explicit ShortestExpr(std::ostream &outs);
 
-    virtual void printUsage();
+    void printUsage() override;
 
-    virtual std::string id();
+    std::string id() override;
 
-    virtual void perform(const std::vector<std::string> args);
+    void perform(std::vector<std::string> args) override;
 };
 
 bool grdbl(const double &lhs, const double &rhs);
@@ -153,23 +151,23 @@ bool lll(const ui &lhs, const ui &rhs);
 
 template<bool PRINT>
 class GoodNums : public Experiment {
-    FRetriever *ret;
+    FRetriever *ret = nullptr;
 
 public:
-    GoodNums(std::ostream &outs) : Experiment(outs) {};
+    explicit GoodNums(std::ostream &outs) : Experiment(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "2 parameters: numbers n, m" << std::endl;
         std::cout << "Prints n numbers with the smallest logarithmic complexity" << std::endl;
         std::cout << "All numbers are less than m" << std::endl;
         std::cout << "Numbers are ordered by increasing logarithmic complexity" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "good";
     }
 
-    virtual void perform(const std::vector<std::string> args) {
+    void perform(const std::vector<std::string> args) override {
         const ui CS = 1000000000;
         ret = new FRetriever(1, CS);
         ui n, m;
@@ -303,10 +301,10 @@ class Collapse : public ExperimentWRet {
 protected:
     std::vector<std::pair<ui, ui> > good;
     std::vector<ui> coll;
-    mpz_t m_fsize;
+    mpz_t m_fsize{};
     static const ui MAXBITS = 150; // seems enough
 
-    void loadCollapsable(const std::string fn) {
+    void loadCollapsable(const std::string& fn) {
         std::ifstream in(fn.c_str());
         ui n;
         while (!in.eof()) {
@@ -316,7 +314,7 @@ protected:
         in.close();
     }
 
-    void loadGoodNumbers(const std::string fn) {
+    void loadGoodNumbers(const std::string& fn) {
         std::ifstream in(fn.c_str());
         char header[1000];
         in.getline(header, 1000);
@@ -324,7 +322,7 @@ protected:
         ui n;
         in >> n;
         while (!in.eof()) {
-            good.push_back(std::make_pair(n, ret->f(n)));
+            good.emplace_back(n, ret->f(n));
             double d;
             in >> d;
             in >> n;
@@ -348,10 +346,10 @@ protected:
         if (mpz_cmp(m_n, m_fsize) < 0)
             return ret->fbig(m_n);
         ui total = 0;
-        for (ui i = 0; i < good.size(); i++)
-            while (mpz_divisible_ui_p(m_n, good[i].first)) {
-                mpz_divexact_ui(m_n, m_n, good[i].first);
-                total += good[i].second;
+        for (auto & i : good)
+            while (mpz_divisible_ui_p(m_n, i.first)) {
+                mpz_divexact_ui(m_n, m_n, i.first);
+                total += i.second;
                 if (mpz_cmp(m_n, m_fsize) < 0)
                     return total + ret->fbig(m_n);
             }
@@ -360,9 +358,9 @@ protected:
     }
 
 public:
-    Collapse(std::ostream &outs) : ExperimentWRet(outs) {};
+    explicit Collapse(std::ostream &outs) : ExperimentWRet(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "2 parameters: file from which to read good numbers and file that contains numbers to collapse"
                   << std::endl;
         std::cout
@@ -370,11 +368,11 @@ public:
                 << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "collapse";
     }
 
-    virtual void _perform(const std::vector<std::string> args) {
+    void _perform(const std::vector<std::string> args) override {
         loadGoodNumbers(args[0]);
         if (PRINT)
             std::cout << "Good numbers loaded" << std::endl;
@@ -382,12 +380,12 @@ public:
         if (PRINT)
             std::cout << "Collapsable numbers loaded" << std::endl;
         loadfsize();
-        for (ui i = 0; i < coll.size(); i++) {
-            ui icompl = ret->f(coll[i]);
+        for (unsigned int & i : coll) {
+            ui icompl = ret->f(i);
             mpz_t m_prime;
-            mpz_init_set_d(m_prime, coll[i]);
+            mpz_init_set_d(m_prime, i);
             mpz_t m_pow;
-            mpz_init_set_d(m_pow, coll[i]);
+            mpz_init_set_d(m_pow, i);
             mpz_mul(m_pow, m_pow, m_prime);
             ui pow = 2;
             mpz_t m_minus1;
@@ -398,7 +396,7 @@ public:
                 mpz_sub_ui(m_minus1, m_pow, 1);
                 powcompl = 1 + complexity(m_minus1);
                 if (PRINT)
-                    std::cout << "checked power " << pow << " for " << coll[i] << std::endl;
+                    std::cout << "checked power " << pow << " for " << i << std::endl;
                 if (powcompl < pow * icompl) {
                     collapsesAt = pow;
                     break;
@@ -407,9 +405,9 @@ public:
                 pow++;
             }
             if (collapsesAt == 0)
-                out << coll[i] << " " << icompl << " ?(>" << pow - 1 << ")" << std::endl;
+                out << i << " " << icompl << " ?(>" << pow - 1 << ")" << std::endl;
             else
-                out << coll[i] << " " << icompl << " " << collapsesAt << " " << powcompl << " < " << pow * icompl
+                out << i << " " << icompl << " " << collapsesAt << " " << powcompl << " < " << pow * icompl
                     << std::endl;
             mpz_clear(m_prime);
             mpz_clear(m_pow);
@@ -426,7 +424,7 @@ protected:
     static const ui MAXDEPTH = 100;
     static const ui FACTORS = 4;
     static constexpr double EPS = 1.0e-6;
-    mpz_t factors[MAXDEPTH][Collapse<PRINT>::MAXBITS + 1];
+    mpz_t factors[MAXDEPTH][Collapse<PRINT>::MAXBITS + 1]{};
 
     virtual ui complexity(mpz_t m_n, int depth) {
         if (mpz_cmp(m_n, this->m_fsize) < 0)
@@ -481,7 +479,7 @@ protected:
                                 ncompl = this->ret->bf(n);
                             else
                                 ncompl = this->ret->f(n);
-                            double logcompl = ((double) ncompl) * log(3) / log(n);
+                            double logcompl = ((double) ncompl) * log(3) / log((double) n);
                             if (logcompl <= minlogc + EPS && ncompl > c) {
                                 minlogc = logcompl;
                                 c = ncompl;
@@ -504,9 +502,9 @@ protected:
             mpz_clear(temp);
             // divide by the factors
             total += c;
-            for (int i = totali - 1; i >= 0; i--) {
-                for (ui j = factori[i]; j < totalFactors; j++)
-                    mpz_set(factors[depth][j], factors[depth][j + 1]);
+            for (int i = static_cast<int>(totali) - 1; i >= 0; i--) {
+                for (ui k = factori[i]; k < totalFactors; k++)
+                    mpz_set(factors[depth][k], factors[depth][k + 1]);
                 totalFactors--;
             }
         }
@@ -556,7 +554,7 @@ protected:
             while (max_set_index[totalFactors - 1] < totalFactors - 1) {
                 // next partition
                 ui j = totalFactors - 1;
-                while (j > 0 ? (set_index[j] == max_set_index[j - 1] + 1) : 0)
+                while (j > 0 ? (set_index[j] == max_set_index[j - 1] + 1) : false)
                     j--;
                 set_index[j]++;
                 ui msi = max(set_index[j], max_set_index[j - 1]);
@@ -587,7 +585,7 @@ protected:
     }
 
 public:
-    Collapse2(std::ostream &outs) : Collapse<PRINT>(outs) {};
+    explicit Collapse2(std::ostream &outs) : Collapse<PRINT>(outs) {};
 
     virtual void printUsage() {
         std::cout << "2 parameters: file from which to read good numbers and file that contains numbers to collapse"
@@ -603,13 +601,13 @@ public:
 
     virtual void perform(const std::vector<std::string> args) {
         this->ret = new FRetriever(1, FCACHESIZE);
-        for (ui i = 0; i < MAXDEPTH; i++)
+        for (auto & factor : factors)
             for (ui j = 0; j < Collapse<PRINT>::MAXBITS; j++)
-                mpz_init(factors[i][j]);
+                mpz_init(factor[j]);
         this->_perform(args);
-        for (ui i = 0; i < MAXDEPTH; i++)
+        for (auto & factor : factors)
             for (ui j = 0; j < Collapse<PRINT>::MAXBITS; j++)
-                mpz_clear(factors[i][j]);
+                mpz_clear(factor[j]);
         delete this->ret;
     }
 };
@@ -618,21 +616,21 @@ template<bool PRINT>
 class Defect : public ExperimentWRet {
 public:
 
-    Defect(std::ostream &outs) : ExperimentWRet(outs) {};
+    explicit Defect(std::ostream &outs) : ExperimentWRet(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "Print the statistics of defect |A_k(x)| for integer values of k and n values of x" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "defect";
     }
 
 protected:
-    virtual void _perform(const std::vector<std::string> args) {
+    void _perform(const std::vector<std::string> args) override {
         const ui MAXK = 14;
         const double EPS = 0.001;
-        const double N = ret->size - 1;
+        const long long N = ret->size - 1;
         ui xbins;
         std::istringstream(args[0]) >> xbins;
         long long xbinsize = N / xbins;
@@ -661,7 +659,7 @@ protected:
                     l++;
                 double d = pow(3.0, static_cast<double>(l + 1) / 3.0);
                 if (fabs(d - round(d)) < EPS)
-                    nextl = round(d);
+                    nextl = (long long) round(d);
                 else
                     nextl = ceil(d);
             }
@@ -682,28 +680,27 @@ protected:
         }
         if (PRINT)
             std::cout << "Done!" << std::endl;
-        return;
     }
 };
 
-template<bool PRINT>
+template <bool PRINT>
 class SophiePrimes : public Experiment {
-    FRetriever *ret;
+    FRetriever *ret = nullptr;
 
 public:
-    SophiePrimes(std::ostream &outs) : Experiment(outs) {};
+    explicit SophiePrimes(std::ostream &outs) : Experiment(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "1 parameter: number n" << std::endl;
         std::cout << "Prints primes p <= n, such that (p-1+||p||)/log(p)<(p-2+||2p-1||)/log(2p-1)" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "primessop";
     }
 
-    virtual void perform(const std::vector<std::string> args) {
-        const ui CS = 1000000000;
+    void perform(const std::vector<std::string> args) override {
+        const ui CS = 1000000000; // 1e9
         ret = new FRetriever(1, CS);
         unsigned long long n;
         std::istringstream(args[0]) >> n;
@@ -717,7 +714,7 @@ public:
                         comps.push_back(ret->f(i));
                     }
         for (unsigned long long i = 0; i < prs.size(); i++)
-            if ((prs[i] - 2 + ret->f(2 * prs[i] - 1)) / log(prs[i] * 2 - 1) > (prs[i] - 1 + comps[i]) * log(prs[i]))
+            if ((double)(prs[i] - 2 + ret->f(2 * prs[i] - 1)) / log((double)(prs[i] * 2 - 1)) > ((double)(prs[i] - 1 + comps[i])) * log((double)prs[i]))
                 out << i << std::endl;
         delete ret;
     }
@@ -727,20 +724,20 @@ template<bool PRINT>
 class AverageDigit : public ExperimentWRet {
 public:
 
-    AverageDigit(std::ostream &outs) : ExperimentWRet(outs) {};
+    explicit AverageDigit(std::ostream &outs) : ExperimentWRet(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout
                 << "Print the histogram of average digit in k-nary and logarithmic complexity up to l in a m x n bw image printed to file x"
                 << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "avehist";
     }
 
 protected:
-    virtual void _perform(const std::vector<std::string> args) {
+    void _perform(const std::vector<std::string> args) override {
         ui base;
         std::istringstream(args[0]) >> base;
         long long maxn;
@@ -776,7 +773,7 @@ protected:
             digsum += 1;
             dignum = max(dignum, j + 1);
             double avedig = (static_cast<double>(digsum)) / dignum;
-            double logc = (static_cast<double>(ret->bf(i))) * log(3) / log(i);
+            double logc = (static_cast<double>(ret->bf(i))) * log(3) / log((double)i);
             ui xbin = max(std::min(static_cast<int>(floor((avedig - minavedig) / xbinsize)), imgdimx - 1), 0);
             ui ybin = max(std::min(static_cast<int>(floor((logc - minlogc) / ybinsize)), imgdimy - 1), 0);
             bins[ybin][xbin] += 1;
@@ -790,13 +787,12 @@ protected:
         for (int row = 0; row < imgdimy; row++)
             for (int col = 0; col < imgdimx; col++) {
                 im[row][col] = png::gray_pixel(max(min(static_cast<int>(floor(
-                        static_cast<double>(bins[imgdimy - 1 - row][col]) / maxfr * 256)), 255), 0));
+                        static_cast<double>(bins[imgdimy - 1 - row][col]) / static_cast<double>(maxfr) * 256)), 255), 0));
             }
         im.write(args[4]);
 
         if (PRINT)
             std::cout << "Done!" << std::endl;
-        return;
     }
 };
 
@@ -805,17 +801,19 @@ template<bool PRINT>
 class ComplexityBruteForce : public Experiment {
 
 protected:
-    FRetriever *ret;
-    ui depth; // for displaying the recursion tree using ncurses
+    FRetriever *ret = nullptr;
+    ui depth{}; // for displaying the recursion tree using ncurses
     // magical constants
     // we wish this code to work for up to 100 bits
     static const ui MAX_ECOMPL = 300;
-    static const ull CS = 1024 * 1024 * 1024; // f cache size
-    static const ui MAX_LB = 10000;
+    static const ull CS = 1024 * 1024 * 1024; // hold the complexity of smallest CS numbers in memory
+    static const ui MAX_LB = 10000; //
     const std::string BLANK_LINE = "                                                ";
     mpz_class E[MAX_ECOMPL];
     mpz_class m_fsize;
-    ui LBS[MAX_LB];
+    ui LBS[MAX_LB]{}; // LBS[i] = minimum complexity over numbers >= i
+
+    ull max_divisors = 0; // curious about the largest number of divisors encountered
 
     struct hash_mpz {
         static const ui PRIME = 2147480197;
@@ -850,8 +848,8 @@ protected:
 
         mpz_class n;
         n = 0;
-        for (ui i = 0; i < MAX_LB; i++) {
-            LBS[i] = trivialLowerBound(n);
+        for (unsigned int & lb : LBS) {
+            lb = trivialLowerBound(n);
             n += 1;
         }
         if (PRINT) {
@@ -862,7 +860,7 @@ protected:
         }
     }
 
-    virtual ui trivialLowerBound(mpz_class m_n) {
+    virtual ui trivialLowerBound(const mpz_class& m_n) {
         ui i = 1;
         while (cmp(E[i], m_n) < 0)
             i++;
@@ -884,25 +882,26 @@ protected:
     }
 
 public:
-    ComplexityBruteForce(std::ostream &outs) : Experiment(outs) {};
+    explicit ComplexityBruteForce(std::ostream &outs) : Experiment(outs) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "2 parameters: n, k. The experiment tests if the complexity of n does not exceed k" << std::endl;
         std::cout << "Outputs if n has complexity not exceeding k" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "complexitybf";
     }
 
-    virtual void perform(const std::vector<std::string> args) {
+    void perform(const std::vector<std::string> args) override {
         init();
         loadfsize();
         mpz_class number;
         number = args[0];
-        ui maxComplexity = std::stoul(args[1], NULL, 10);
+        ui maxComplexity = std::stoul(args[1], nullptr, 10);
         ui cm = complexityMul(number, maxComplexity);
         ui ca = complexityAdd(number, maxComplexity);
+        clear();
         if (cm == 0 && ca == 0) {
             out << "Integer complexity of " << number << " > " << maxComplexity << std::endl;
         } else {
@@ -911,16 +910,15 @@ public:
             else
                 out << "Integer complexity of " << number << " = " << max(cm, ca) << std::endl;
         }
-        clear();
     }
 
 
-    // return 0 if complexity > maxCompl, otherwise return complexity
+    // return 0 if complexity > complexityUpperBound, otherwise return complexity
     // NB: this function only works correctly on sufficiently large numbers!
-    virtual ui complexityAdd(const mpz_class &number, const ui maxCompl) {
+    virtual ui complexityAdd(const mpz_class &number, const ui complexityUpperBound) {
         if (faddcache.count(number) == 1) {
             std::pair<ui, bool> v = faddcache[number];
-            if (v.first > maxCompl)
+            if (v.first > complexityUpperBound)
                 return 0;
             if (v.second)
                 return v.first;
@@ -929,13 +927,13 @@ public:
         }
         if (PRINT) {
             std::stringstream ss;
-            ss << "+" << number << " " << maxCompl;
+            ss << "+" << number << " " << complexityUpperBound;
             move(depth, 0);
             addstr(ss.str().c_str());
             refresh();
             depth++;
         }
-        const ui MAXCOMPL = 1000000;
+        const ui MAXCOMPL = std::numeric_limits<ui>::max()/2;
         ui complexity = MAXCOMPL;
         mpz_class a;
         mpz_class b;
@@ -944,9 +942,9 @@ public:
         b = 1;
         ui addend = 1;
 
-        while (trivialLowerBound(a) + LBS[addend] < maxCompl + 2) {
+        while (trivialLowerBound(a) + LBS[addend] < complexityUpperBound + 2) {
             ui bcomplexity = ret->fbig(b);
-            ui c = complexityMul(a, min(complexity - 1, maxCompl) - bcomplexity);
+            ui c = complexityMul(a, min(complexity - 1, complexityUpperBound) - bcomplexity);
             if (c > 0) {
                 complexity = c + bcomplexity;
 //                if (PRINT)
@@ -957,7 +955,7 @@ public:
             addend++;
         }
         if (complexity == MAXCOMPL) {
-            faddcache[number] = std::make_pair(max(faddcache[number].first, maxCompl + 1), false);
+            faddcache[number] = std::make_pair(max(faddcache[number].first, complexityUpperBound + 1), false);
             complexity = 0;
         } else {
             faddcache[number] = std::make_pair(complexity, true);
@@ -972,7 +970,7 @@ public:
 
     // return 0 if complexity > maxCompl, otherwise return complexity
     virtual ui complexityMul(const mpz_class &number, const ui maxCompl) {
-        const ui MAXCOMPL = 1000000;
+        const ui MAXCOMPL = std::numeric_limits<ui>::max()/2;
         ui complexity = MAXCOMPL;
         if (cmp(number, m_fsize) < 0) {
             complexity = ret->fbig(number);
@@ -1005,32 +1003,43 @@ public:
 
         factor(number, fs);
 
-        ui fi = 1, distpf = 0;
-        while (cmp(fs[fi], 0) > 0) {
-            pfs.push_back(fs[fi]);
+        ui nfs = 1, distpf = 0;
+        while (cmp(fs[nfs], 0) > 0) {
+            pfs.push_back(fs[nfs]);
             pfpowers.push_back(1);
-            while (cmp(fs[fi], fs[fi + 1]) == 0) {
+            while (cmp(fs[nfs], fs[nfs + 1]) == 0) {
                 pfpowers[distpf]++;
-                fi++;
+                nfs++;
             }
-            fi++;
+            nfs++;
             distpf++;
         }
 
         // have to be careful about overflow here. For numbers up to 2^100 divisor count of 2^23 seems sufficient
-        ui ndivisors = 1;
+        ull ndivisors = 1;
         for (ui i = 0; i < distpf; i++)
             ndivisors *= pfpowers[i] + 1;
+        if (ndivisors > max_divisors) {
+            max_divisors = ndivisors;
+            if (PRINT)
+            {
+                move(0, 60);
+                addstr("Max divisors: ");
+                addstr(std::to_string(max_divisors).c_str());
+                move(depth, 0);
+                refresh();
+            }
+        }
         if (ndivisors == 2) // true iff the number is prime
             complexity = MAXCOMPL;
         else {
-            std::vector<mpz_class> divisors(ndivisors); // all of the divisors
+            std::vector<mpz_class> divisors(ndivisors); // all the divisors
             std::vector<ui> divlb(ndivisors); // divisor lower bound so far (we fill with trivial at the start)
             std::vector<bool> lbopt(ndivisors); // true if lower bound is optimal
 
-            std::vector<ui> divindex(fi, 0); // holds the index for the divisor in divisors and divlb
-            std::vector<std::vector<ui> > pfindices(fi, std::vector<ui>(distpf,
-                                                                        0)); // holds the prime decomposition indices for each divisor (for easier recalculation of divindex)
+            std::vector<ui> divindex(nfs, 0); // holds the index for the divisor in divisors and divlb
+            std::vector<std::vector<ui> > pfindices(nfs, std::vector<ui>(distpf,
+                                                                         0)); // holds the prime decomposition indices for each divisor (for easier recalculation of divindex)
             std::vector<ui> cumindex(distpf + 1); // holds the cumulative index for ith prime factor
             std::vector<ui> totalpfindex(distpf, 0); // holds the total number of pfs used
 
@@ -1226,29 +1235,29 @@ class FCalculator : public Experiment {
     std::vector<std::vector<unsigned char> > cache;
     std::vector<ull> cachestart;
     std::vector<unsigned char> finit;
-    ull finitsize; // compute complexity for numbers up to finitsize-1 using the sieve method
+    ull finitsize{}; // compute complexity for numbers up to finitsize-1 using the sieve method
     std::vector<unsigned char> ftail;
-    ull ftailsize;
-    ull ftailoff; // ftail[x] == f[x+ftailoff]
+    ull ftailsize{};
+    ull ftailoff{}; // ftail[x] == f[x+ftailoff]
     std::fstream ffile;
-    ull n;
+    ull n{};
     std::vector<ull> addends; // numbers not possible to write as sums
     std::vector<ull> E;
     MinHeap<ull, ull, cmpll> divisors; // we should have enough for pi(sqrt(n))
 
-    unsigned char max_f(const ull x) {
+    unsigned char max_f(const ull& x) {
         if (x > 1)
             return __builtin_popcountll(x) - 1 + 2 * (63 - __builtin_clzll(x));
         else
             return x;
     }
 
-    ull max_add_check(const ull x) {
-        unsigned char f = max_f(x);
-        return max_add_check_with_fbound(x, f);
-    }
+//    ull max_add_check(const ull& x) {
+//        unsigned char f = max_f(x);
+//        return max_add_check_with_fbound(x, f);
+//    }
 
-    ull max_add_check_up_to(const ull x) {
+    ull max_add_check_up_to(const ull& x) {
         unsigned char f = 1;
         ull y;
         for (y = x; y > 2; y /= 2)
@@ -1257,7 +1266,7 @@ class FCalculator : public Experiment {
         return max_add_check_with_fbound(x, f);
     }
 
-    ull max_add_check_with_fbound(const ull x, const unsigned char f) {
+    ull max_add_check_with_fbound(const ull& x, const unsigned char& f) {
         unsigned char i = f / 2;
         while (E[i] + E[f - i] < x)
             i--;
@@ -1280,7 +1289,6 @@ class FCalculator : public Experiment {
         // now increase the keys until >= finitsize;
         for (ui i = divisors.size(); i > 0; i--)
             divisors.increase(i, pmultiple(finitsize, divisors.getV(i)) * divisors.getV(i));
-        return;
     }
 
     void init_caches() {
@@ -1329,7 +1337,6 @@ class FCalculator : public Experiment {
                     }
             }
             // addition
-            const ull MN = 16534727299ULL; // smallest number for which +8 or greater is necessary (+9 for MN)
             ull easy = std::min(fsize, MN);
             for (ull i = 9; i < easy; i++) {
                 if (f[i - 1] + 1 < f[i]) {
@@ -1468,7 +1475,7 @@ class FCalculator : public Experiment {
         save_init();
     }
 
-    unsigned char &ftailf(const ull i) {
+    unsigned char& ftailf(const ull& i) {
         if (i < ftailoff)
             return (ftail[i + ftailsize - ftailoff]);
         else
@@ -1584,19 +1591,19 @@ class FCalculator : public Experiment {
     }
 
 public:
-    FCalculator(std::ostream &outs) : Experiment(outs), divisors(std::numeric_limits<ull>::max(), 0, 6000000) {};
+    explicit FCalculator(std::ostream &outs) : Experiment(outs), divisors(std::numeric_limits<ull>::max(), 0, 6000000) {};
 
-    virtual void printUsage() {
+    void printUsage() override {
         std::cout << "2 parameters: number n, and filename f" << std::endl;
         std::cout << "Computes integer complexity for all numbers 0 to n" << std::endl;
         std::cout << "Stores in i-th byte of file f the complexity of number i" << std::endl;
     }
 
-    virtual std::string id() {
+    std::string id() override {
         return "complexity";
     }
 
-    virtual void perform(const std::vector<std::string> args) {
+    void perform(const std::vector<std::string> args) override {
         std::istringstream(args[0]) >> n;
         ffile.open(args[1], std::fstream::in | std::fstream::out | std::fstream::binary | std::fstream::trunc);
         if (PRINT && !ffile.is_open()) {

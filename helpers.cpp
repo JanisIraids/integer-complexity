@@ -9,10 +9,10 @@
 double lc(const long long n, const int complexity)
 {
   static const double l3 = log(3);
-  return static_cast<double>(complexity)*l3/log(n);
+  return static_cast<double>(complexity)*l3/log((double)n);
 }
 
-bool is_prime(const long long n)
+bool is_prime(const ull n)
 {
   if (n < 2)
     return false;

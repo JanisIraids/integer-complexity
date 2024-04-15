@@ -1,6 +1,6 @@
 #include "fretriever.h"
 #include <iostream>
-const std::string FRetriever::fname = "/mnt/d/exp_math/exp_src/f.bin";
+const std::string FRetriever::fname = "/mnt/e/f.bin";
 
 void FRetriever::init(const ui cachecount, const ui cachesize)
 {

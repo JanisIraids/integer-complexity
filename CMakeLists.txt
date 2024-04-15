@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.10) # specify the minimum version of CMake that your project requires
-project(integer-complexity) # name your project
+project(integer-complexity CXX) # name your project
 
 set(CMAKE_CXX_STANDARD 11) # specify the C++ standard
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_library(msieve STATIC IMPORTED)
 set_target_properties(msieve PROPERTIES
-        IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/msieve/libmsieve.a
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/msieve/libmsieve_debug.a
+        else()
+            IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/msieve/libmsieve.a
+        endif()
         INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/msieve/include
 )
 
